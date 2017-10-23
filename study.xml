@@ -1,0 +1,1473 @@
+springboot与mybatis整合实例详解 完美融合 
+
+<没搞清楚的问题>
+		<VARIANT>
+			1: 封装到VARIANT内 
+			   VARIANT varChunk;
+			   SAFEARRAY *psa;
+			   varChunk.vt = VT_ARRAY|VT_UI1;
+			   varChunk.parray = psa;
+			   
+			2: 安全数组的标识
+				fFeatures;  //安全数组的标记说明
+
+				FADF_AUTO 0x0001		在栈上创建数组
+
+				FADF_STATIC 0x0002		在堆上创建数组
+
+				FADF_EMBEDDED 0x0004	在结构中创建
+
+				FADF_FIXEDSIZE 0x0010	不能改变数组大小
+
+				FADF_RECORD 0x0020		记录容器
+
+				FADF_HAVEIID 0x0040		有IID 身份标记 数组
+
+				FADF_HAVEVARTYPE 0x0080	VT 类型数组
+
+				FADF_BSTR 0x0100		BSTR数组
+
+				FADF_UNKNOWN 0x0200		IUnknown* 数组
+
+				FADF_DISPATCH 0x0400	IDispatch* 数组
+
+				FADF_VARIANT 0x0800     VARIANTs数组
+
+				FADF_RESERVED 0xF0E8    余留，将来使用
+				
+				
+				<SAFEARRAY(安全数组)使用详解>
+					1: 创建安全数组
+					void CreateSafeArray(){
+						   //创建SAFEARRAY数组，每个元素为long型，该数组是一维数组
+
+						   long nData[10]={1,2,3,4,5,6,7,8,9,10};
+
+						 
+						   SAFEARRAY* pArray=NULL;
+
+						   HRESULT hr=SafeArrayAllocDescriptor(1,&pArray);//创建SAFEARRAY结构的对象
+
+						   pArray->cbElements=sizeof(nData[0]);
+
+						   pArray->rgsabound[0].cElements=10;
+
+						   pArray->rgsabound[0].lLbound=0;
+
+						   pArray->pvData=nData;
+
+						   pArray->fFeatures=FADF_AUTO|FADF_FIXEDSIZE;//FADF_AUTO指定在栈上分配数据，并且大小不可以改变（固定为10）
+
+						  
+
+						   //访问SAFEARRAY数组
+
+						   long* pValue=NULL;
+
+						   SafeArrayAccessData(pArray,(void**)&pValue);//取得数据存到指针pValue
+
+						   long Low(0),High(0);
+
+						   hr=SafeArrayGetLBound(pArray,1,&Low);//维数索引从1开始
+
+						   hr=SafeArrayGetUBound(pArray,1,&High);//维数索引从1开始
+						 
+
+						   SafeArrayUnaccessData(pArray);
+
+						   SafeArrayDestroy(pArray);
+					}
+					
+					2：vc++创建dll, VisualBasic向dll中传数组
+
+						Vc++中创建dll工程StdDLL，把下边函数复制到cpp中
+
+						 long __declspec (dllexport) __stdcall Func2(SAFEARRAY **ppsaMyArray) 
+							  {
+										   HRESULT hr;
+										   HUGEP byte * plData;
+							  hr = SafeArrayAccessData(*ppsaMyArray, (void HUGEP* FAR*)&plData);//取得数组数据
+						 
+							
+							  byte baa;
+								baa=plData[0];//第一个数据
+							  
+							  SafeArrayUnaccessData(*ppsaMyArray);//取消数据访问
+						 
+							 
+						 
+							  SafeArrayDestroy(*ppsaMyArray);//销毁
+									 return 2;
+							  }
+						将以下文本追加到 StdDLL.def 文件中现有文本：Func2
+						
+						
+					3：在VB中访问安全数组
+					Private Declare Function Func2 Lib"C:/StdDLL/Debug/StdDLL.dll" (MyArray() As Long) As Long ‘注意文件路径和你机器的一致
+
+					public sub TestSafeArray
+						Dim Result As Long
+						Dim MyArrayOfLongs(3) As Long
+						 
+						MyArrayOfLongs(0) = 0
+						MyArrayOfLongs(1) = 1
+						MyArrayOfLongs(2) = 2
+						 
+						Result = Func2(MyArrayOfLongs())
+						MsgBox ("Func2 returned " & Result)
+					end sub
+					
+					
+					
+					if(varChunk.vt = VT_ARRAY | VT_BSTR)
+					{
+						BSTR* buf;
+						long LBound; // 数组下界
+						long UBound; // 数组上界
+						SafeArrayAccessData(varChunk.parray, (void **)&buf);
+						SafeArrayGetLBound(varChunk.parray, 1, &LBound);
+						SafeArrayGetUBound(varChunk.parray, 1, &UBound);
+						for(long i = LBound; i < UBound; i ++)
+						{
+							CString str(buf);
+							MessageBox(str);
+						}
+						SafeArrayUnaccessData(varChunk.parray);
+					}
+				</SAFEARRAY(安全数组)使用详解>
+				
+		</VARIANT>
+		
+	
+		1：WEB-INF文件夹中的资源访问权限
+
+		2：debug 调试方法
+		
+		2: Cannot resolve taglib with uri http://java.sun.com/jsp/jstl/core
+		
+		spring 4.x 企业 勘误
+		
+		https://my.oschina.net/stamen/blog/860511
+		
+		<aa>
+		
+		二  SAFEARRAY的用法
+		（1）  SAFEARRAY的赋值并传递给VARIANT变量
+		
+			SAFEARRAYBOUND saBound[1];  // 1表示一维数组
+			saBound[0].cElements = 20;     // 20表示有20个元素
+			saBound[0].lLbound = 0;         // 0表示从0开始
+			SAFEARRAY *p;
+			p = SafeArrayCreate(VT_R4,1,saBound);  //创建SafeArray
+												   // 1表示维数
+												   
+												   
+			//   下面为锁定数据，将pdata和p关联起来，以后对pdata操作相当于//   对p操作
+		   float *pdata;
+		   SafeArrayAccessData(p,(void HUGEP**)&pdata);
+		   pdata = new float[20];
+		   for(int i=0;i 小于 20;i++)
+			   pdata[i]=i;
+		   SafeArrayUnaccessData(p);       //解除锁定
+		 
+		   VARIANT varBand;
+		   varBand1.vt = VT_ARRAY|VT_R4;
+		   varBand1.parray = p;
+		   
+		   
+		（2） 从VARIANT变量中获取SAFEARRAY值，并传递给普通类型的变量
+		 
+		   SAFEARRAY *pIn;
+		   pIn = varBand.parray;
+		   VARTYPE vt;
+		   UINT dim;
+		   SafeArrayGetVartype(pIn,&vt);    //获得数据类型
+		   dim = SafeArrayGetDim(pIn);    //获得维数
+		   long LBound;                           //下界
+		   long UBound;                           //上界
+		   SafeArrayGetLBound(pIn,1,&LBound);    //获得下界
+		   SafeArrayGetUBound(pIn,1,&UBound);   //获得上界
+		   float *pData;
+		   SafeArrayAccessData(pIn,(void HUGEP**)&pData);
+		   
+		   //锁定数据
+		   //此时就得到了varBand中的数组数据了,保存在pData中
+		 
+		  其次SAFEARRAY也可以通过下列函数来读取数据：
+		  放置数据元素到SafeArray psa
+		  
+		  Double bVal[10]={1,2,3,4};
+		  for(long index=0;index 小于 =10;index++)         
+		  {
+			 SafeArrayPutElement(psa,&index,&bVal[index]);
+		  }
+		  
+		 读取SafeArray中的数据的步骤：
+		 DOUBLE buf[10];
+		 for(long ind=0;ind 小于 10;ind++)        
+		  {          
+			 ::SafeArrayGetElement(pvar.parray,&ind,buf+ind);  
+		  }
+		
+		</aa>
+		
+		
+		<安全数组>
+			SAFEARRAY的主要目的是用于automation中的数组型参数的传递。	
+			
+			因为在网络环境中，数组是不能直接传递的，而必须将其包装成SafeArray。
+			
+			实质上SafeArray就是将通常的数组增加一个描述符，说明其维数、长度、边界、元素类型等信息。
+			
+			SafeArray也并不单独使用，而是将其再包装到VARIANT类型的变量中，然后才作为参数传送出去。	
+			在VARIANT的vt成员的值如果包含VT_ARRAY|...,那么它所封装的就是一个SafeArray，它的parray成员即是指向SafeArray的指针。 
+			
+			SafeArray中元素的类型可以是VARIANT能封装的任何类型，包括VARIANT类型本身。
+			
+	　　	使用SafeArray的具体步骤： 
+
+		　　方法一： 
+		　　包装一个SafeArray： 
+		　　(1). 定义变量，如： 
+		　　VARIANT varChunk; 
+		　　SAFEARRAY *psa; 
+		　　SAFEARRAYBOUND rgsabound[1]; 
+		
+		　　(2). 创建SafeArray描述符： 
+		　　uIsRead=f.Read(bVal,ChunkSize);//read array from a file. 
+		
+		　　if(uIsRead==0)
+				break; 
+				
+		　　rgsabound[0].cElements =uIsRead; 
+		　　rgsabound[0].lLbound = 0; 
+		　　psa = SafeArrayCreate(VT_UI1,1,rgsabound); 
+		
+		　　(3). 放置数据元素到SafeArray： 
+		　　for(long index=0;index 小于 uIsRead;index++) 
+		　　{ 
+		　　	if(FAILED(SafeArrayPutElement(psa,&index,&bVal))) 
+		　　		::MessageBox(NULL,"出毛病了。","提示",MB_OK | MB_ICONWARNING); 
+		　　} 
+		　　一个一个地放，挺麻烦的。 
+		
+		　　(4). 封装到VARIANT内： 
+		　　varChunk.vt = VT_ARRAY|VT_UI1; 
+		　　varChunk.parray = psa; 
+		　　这样就可以将varChunk作为参数传送出去了。
+		
+		
+		
+		　　读取SafeArray中的数据的步骤： 
+		　　(1). 用SafeArrayGetElement一个一个地读 
+		　　BYTE buf[lIsRead]; 
+		　　for(long index=0;index 小于 lIsRead;index++) 
+		　　{ 
+		　　	::SafeArrayGetElement(varChunk.parray,&index,buf+index); 
+		　　} 
+		　　就读到缓冲区buf里了。 
+		
+		　　方法二： 
+		　　使用SafeArrayAccessData直接读写SafeArray的缓冲区：
+		
+		　　(1). 读缓冲区： 
+		　　BYTE *buf; 
+		　　SafeArrayAccessData(varChunk.parray, (void **)&buf); 
+		
+		　　f.Write(buf,lIsRead); 
+		　　SafeArrayUnaccessData(varChunk.parray); 
+		
+		　　(2). 写缓冲区： 
+		　　BYTE *buf; 
+		　　::SafeArrayAccessData(psa, (void **)&buf); 
+		
+		　　for(long index=0;index 小于 uIsRead;index++) 
+		　　{ 
+		　　	buf=bVal; 
+		　　} 
+		
+		　　::SafeArrayUnaccessData(psa); 
+		　　varChunk.vt = VT_ARRAY|VT_UI1; 
+		　　varChunk.parray = psa; 
+		
+		　　这种方法读写SafeArray都可以，它直接操纵SafeArray的数据缓冲区，比用SafeArrayGetElement和 			 			SafeArrayPutElement速度快。特别适合于读取数据。但用完之后不要忘了调用::SafeArrayUnaccessData 				  (psa)，否则会出错的。 
+		
+		　　如果SafeArray中存的是BSTR的二维数组,则代码如下： 
+		
+		　　if(varChunk.vt = VT_ARRAY | VT_BSTR) 
+		　　{ 
+			　　BSTR* buf; 
+			　　long LBound; // 数组下界 
+			　　long UBound; // 数组上界 
+			
+			　　SafeArrayAccessData(varChunk.parray, (void **)&buf); 
+			　　SafeArrayGetLBound(varChunk.parray, 1, &LBound); 
+			　　SafeArrayGetUBound(varChunk.parray, 1, &UBound); 
+			
+			　　for(long i = LBound; i  小于  UBound; i ++) 
+			　　{ 
+			　　	CString str(buf); 
+			　　	MessageBox(str); 
+			　　} 
+		　　	SafeArrayUnaccessData(varChunk.parray); 
+		　　}
+		</安全数组>
+		
+		
+	</没搞清楚的问题>
+	
+	
+	<需要记住的知识点>
+	
+	<学习资料>
+		1: Windows API一日一练
+	</学习资料>
+	
+		<CString to String>
+		
+			String str ="aaaabbbb";
+			
+			CString cstr(str.c_str());
+			
+			cstr = str.c_str();
+			
+			cstr = str.data();
+			
+		</CString to String>
+		
+		
+		<administrator>
+			管理员
+		</administrator>
+		
+		maven 手动添加  到本地仓库  
+	   mvn install:install-file -Dfile=本地jar包的位置  -DgroupId=上面的groupId  -DartifactId=上面的artifactId  -Dversion=上面的version  -Dpackaging=jar
+	   
+	   mvn install:install-file -Dfile=E:\spring4.3.4\libs\jar\spring-beans-4.3.4.RELEASE.jar  -DgroupId=org.springframework  -DartifactId=spring-beans  -Dversion=4.3.4.RELEASE  -Dpackaging=jar  
+
+	   mvn install:install-file -Dfile=E:\commons-dbcp-1.4.jar  -DgroupId=commons-dbcp  -DartifactId=commons-dbcp  -Dversion=1.4 -Dpackaging=jar  
+	   
+	   <springboot-jetty>
+			The spring boot starter web dependency will include tomcat by default. This will confuse jetty when you start it, since it uses different versions of the juli lib.
+
+			Simply fix in your pom.xml, exlude the starter-tomcat and separately include the jetty dependency:
+
+			<dependency>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-starter-web</artifactId>
+				<exclusions>
+					<exclusion>
+						<groupId>org.springframework.boot</groupId>
+						<artifactId>spring-boot-starter-tomcat</artifactId>
+					</exclusion>
+				</exclusions>
+			</dependency>
+			
+			<dependency>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-starter-jetty</artifactId>
+			</dependency>
+			
+		</springboot-jetty>
+		
+	</需要记住的知识点>
+	
+
+Spring系列之bean的使用   imesking/SyntaxDem
+
+一、Bean的定义
+
+<bean id="userDao" class="com.dev.spring.simple.MemoryUserDao"/>
+这是一个最简单的 Bean 定义。它类似于调用了语句：
+MemoryUserDao userDao = new MemoryUserDao()。
+id属性必须是一个有效的 XML ID,这意味着它在整个 XML 文档中必须唯一。它是一个 Bean 的“终身代号”。同时你也可以用 name 属性为 Bean 定义一个或多个别名（用逗号或空格分开多个别名）。name 属性允许出现任意非法的 XML 字母。例如：
+
+<bean id="userDao" name="userDao*_1, userDao*_2" class="com.dev.spring.simple.MemoryUserDao"/>。
+class属性定义了这个 Bean 的全限定类名（包名＋类名）。Spring 能管理几乎所有的 Java 类。一般情况，这个 Java 类会有一个默认的构造函数，用set方法设置依赖的属性。
+
+Bean 元素出了上面的两个属性之外，还有很多其它属性。说明如下：
+
+复制代码
+<bean
+    id="beanId"（1）
+    name="beanName"（2）
+    class="beanClass"（3）
+    parent="parentBean"（4）
+    abstract="true | false"（5）
+    singleton="true | false"（6）
+    lazy-init="true | false | default"（7）
+    autowire="no | byName | byType | constructor | autodetect | default"（8）
+    dependency-check = "none | objects | simple | all | default"（9）
+    depends-on="dependsOnBean"（10）
+    init-method="method"（11）
+    destroy-method="method"（12）
+    factory-method="method"（13）
+    factory-bean="bean">（14）
+</bean>
+复制代码
+ （1）id: Bean 的唯一标识名。它必须是合法的 XML ID，在整个 XML 文档中唯一。
+
+（2）name: 用来为 id 创建一个或多个别名。它可以是任意的字母符合。多个别名之间用逗号或空格分开。
+
+（3）class: 用来定义类的全限定名（包名＋类名）。只有子类 Bean 不用定义该属性。
+
+（4）parent: 子类 Bean 定义它所引用它的父类 Bean。这时前面的 class 属性失效。子类 Bean 会继承父类 Bean 的所有属性，子类 Bean 也可以覆盖父类 Bean 的属性。注意：子类 Bean 和父类 Bean 是同一个 Java 类。
+
+（5）abstract（默认为”false”）：用来定义 Bean 是否为抽象 Bean。它表示这个 Bean 将不会被实例化，一般用于父类 Bean，因为父类 Bean 主要是供子类 Bean 继承使用。
+
+（6）singleton（默认为“true”）：定义 Bean 是否是 Singleton（单例）。如果设为“true”,则在 BeanFactory 作用范围内，只维护此 Bean 的一个实例。如果设为“flase”，Bean将是 Prototype（原型）状态，BeanFactory 将为每次 Bean 请求创建一个新的 Bean 实例。
+
+（7）lazy-init（默认为“default”）：用来定义这个 Bean 是否实现懒初始化。如果为“true”，它将在 BeanFactory 启动时初始化所有的 Singleton Bean。反之，如果为“false”,它只在 Bean 请求时才开始创建 Singleton Bean。
+
+（8）autowire（自动装配，默认为"default"）：它定义了 Bean 的自动装载方式。
+"no"：不使用自动装配功能。
+"byName"：通过 Bean 的属性名实现自动装配。
+"byType"：通过 Bean 的类型实现自动装配。
+"constructor"：类似于 byType，但它是用于构造函数的参数的自动组装。
+"autodetect"：通过 Bean 类的反省机制（introspection）决定是使用“constructor”还是使用“byType”。
+
+（9）dependency-check（依赖检查，默认为“default”）：它用来确保 Bean 组件通过 JavaBean 描述的所以依赖关系都得到满足。在与自动装配功能一起使用时，它特别有用。
+none：不进行依赖检查。
+objects：只做对象间依赖的检查。
+simple：只做原始类型和 String 类型依赖的检查
+all：对所有类型的依赖进行检查。它包括了前面的 objects 和 simple。
+
+（10）depends-on（依赖对象）：这个 Bean 在初始化时依赖的对象，这个对象会在这个 Bean 初始化之前创建。
+
+（11）init-method:用来定义 Bean 的初始化方法，它会在 Bean 组装之后调用。它必须是一个无参数的方法。
+
+（12）destroy-method：用来定义 Bean 的销毁方法，它在 BeanFactory 关闭时调用。同样，它也必须是一个无参数的方法。它只能应用于singleton Bean。
+
+（13）factory-method：定义创建该 Bean 对象的工厂方法。它用于下面的"factory-bean"，表示这个 Bean 是通过工厂方法创建。此时，"class"属性失效。
+
+（14）factory-bean:定义创建该 Bean 对象的工厂类。如果使用了"factory-bean"则"class"属性失效。
+
+二、实例化Bean的三种方式
+
+1.使用构造器实例化Bean
+
+这是最简单的方式，Spring IOC容器即能使用默认空构造器也能使用有参数构造器两种方式创建Bean。
+使用空构造器进行定义，class属性指定的类必须有空构造器。使用有参数构造器进行定义，可以使用< constructor-arg >标签指定构造器参数值，其中index表示位置，value表示常量值，也可以指定引用，指定引用使用ref来引用另一个Bean定义，后边会详细介绍。下面来看一个例子：
+
+（1）定义一个接口
+
+package com.spring.service;
+
+public interface IUserService {
+    public void show();
+}
+ （2）实现类，该类有一个空构造器和一个有参构造器：
+
+复制代码
+package com.spring.service.impl;
+
+import com.spring.service.IUserService;
+
+public class UserServiceImpl implements IUserService{
+    
+    private String message;
+    
+    public UserServiceImpl(){
+        this.message="lixiaoxi";
+    }
+    
+    public UserServiceImpl(String message){
+        this.message=message;
+    }
+    
+    public void show(){
+        System.out.println("hello,"+message);
+    }
+}
+复制代码
+（3）在配置文件（applicationContext1.xml）中配置Bean定义，如下所示：
+
+复制代码
+<!-- 使用默认构造函数 -->
+<bean id="bean1" class="com.spring.service.impl.UserServiceImpl">  
+</bean>
+    
+<!-- 使用有参数构造函数 -->
+<bean id="bean2" class="com.spring.service.impl.UserServiceImpl" >
+    <!-- 指定构造器参数 -->
+    <constructor-arg index="0" value="zhangsan" />
+</bean>
+复制代码
+（4）测试方法：
+
+复制代码
+/**
+ * 使用构造器实例化Bean
+ */
+@Test
+public void testCreateBeanByConstructor(){
+    //读取配置文件
+    ApplicationContext ctx=new ClassPathXmlApplicationContext("applicationContext1.xml");
+    //获取bean的实例
+    IUserService bean1=(IUserService) ctx.getBean("bean1");
+    //调用方法
+    bean1.show();
+    
+    IUserService bean2=(IUserService) ctx.getBean("bean2");
+    bean2.show();
+}
+复制代码
+2.使用静态工厂方法实例化Bean
+
+使用这种方式除了指定必须的class属性，还要指定factory-method属性来指定实例化Bean的方法，而且使用静态工厂方法也允许指定方法参数，spring IoC容器将调用此属性指定的方法来获取Bean。
+
+（1）定义静态工厂类：
+
+复制代码
+package com.spring.factory;
+
+import com.spring.service.IUserService;
+import com.spring.service.impl.UserServiceImpl;
+
+public class UserStaticFactory {
+    //工厂方法
+    public static IUserService newInstance(String message){
+        //返回需要的Bean实例
+        return new UserServiceImpl(message);
+    }
+}
+复制代码
+（2）在配置文件（applicationContext1.xml）中配置Bean定义，如下所示：
+
+  <!-- 使用静态工厂方法 -->
+  <bean id="bean3" class="com.spring.factory.UserStaticFactory" factory-method="newInstance" >
+      <constructor-arg index="0" value="lisi" />
+  </bean>
+（3）测试方法：
+
+复制代码
+/**
+ * 使用静态工厂实例化Bean
+ */
+@Test
+public void testCreateBeanByStaticFactory(){
+    ApplicationContext ctx=new ClassPathXmlApplicationContext("applicationContext1.xml");
+    IUserService bean3=(IUserService) ctx.getBean("bean3");
+    bean3.show();
+}
+复制代码
+3.使用实例工厂方法实例化Bean
+
+使用这种方式不能指定class属性，此时必须使用factory-bean属性来指定工厂Bean，factory-method属性指定实例化Bean的方法，而且使用实例工厂方法允许指定方法参数，方式和使用构造器方式一样，配置如下：
+
+（1）定义实例工厂类：
+
+复制代码
+package com.spring.factory;
+
+import com.spring.service.IUserService;
+import com.spring.service.impl.UserServiceImpl;
+
+public class UserInstanceFactory {
+    
+    public IUserService newInstance(String message){
+        return new UserServiceImpl(message);
+    }
+}
+复制代码
+（2）在配置文件（applicationContext1.xml）中配置Bean定义，如下所示：
+
+  <!-- 1.定义实例工厂Bean -->
+  <bean id="beanInstanceFactory" class="com.spring.factory.UserInstanceFactory" />
+  <!-- 2.使用实例工厂Bean创建Bean -->
+  <bean id="bean4" factory-bean="beanInstanceFactory" factory-method="newInstance" >
+       <constructor-arg index="0" value="aaaa"></constructor-arg>
+  </bean> 
+（3）测试方法：
+
+复制代码
+/**
+ * 使用实例工厂实例化Bean
+ */
+@Test
+public void testCreateBeanByInstanceFactory(){
+    ApplicationContext ctx=new ClassPathXmlApplicationContext("applicationContext1.xml");
+    IUserService bean4=(IUserService) ctx.getBean("bean4");
+    bean4.show();
+}
+复制代码
+总结：
+
+这三种方式只是配置不一样，从获取方式看完全一样，没有任何不同。这也是Spring IoC的魅力，Spring IoC帮你创建Bean，我们只管使用就可以了，是不是很简单。
+
+三、Bean的作用域
+
+ 什么是作用域呢？即“scope”，在面向对象程序设计中一般指对象或变量之间的可见范围。而在Spring容器中是指其创建的Bean对象相对于其他Bean对象的请求可见范围。
+Spring提供“singleton”和“prototype”两种基本作用域，另外提供“request”、“session”、“globalsession”三种web作用域；Spring还允许用户定制自己的作用域。
+
+作用域	描述
+singleton	
+在每个Spring IoC容器中一个bean定义对应一个对象实例。
+
+（默认）在spring IOC容器中仅存在一个Bean实例,Bean以单实例的方式存在。
+
+prototype	
+一个bean定义对应多个对象实例。
+
+每次从容器中调用Bean时,都返回一个新的实例,即每次调用getBean()时,相当于执行new XxxBean()的操作。
+
+request
+
+在一次HTTP请求中，一个bean定义对应一个实例；即每次HTTP请求将会有各自的bean实例，它们依据某个bean定义创建而成。该作用域仅在基于web的Spring ApplicationContext情形下有效。
+
+session
+
+在一个HTTP Session中，一个bean定义对应一个实例。该作用域仅在基于web的Spring ApplicationContext情形下有效。
+
+同一个HTTP session共享一个Bean,不同HTTP session使用不同的Bean,该作用域仅适用于webApplicationContext环境。
+
+globalSession
+
+在一个全局的HTTP Session中，一个bean定义对应一个实例。典型情况下，仅在使用portlet context的时候有效。该作用域仅在基于web的Spring ApplicationContext情形下有效。
+
+ 1.singleton
+“singleton”作用域的Bean只会在每个Spring IoC容器中存在一个实例，而且其完整生命周期完全由Spring容器管理。对于所有获取该Bean的操作Spring容器将只返回同一个Bean。注意:spring将Bean的默认作用域定为singleton。
+
+当一个bean的作用域设置为singleton, 那么Spring IOC容器中只会存在一个共享的bean实例，并且所有对bean的请求，只要id与该bean定义相匹配，则只会返回bean的同一实例。换言之，当把 一个bean定义设置为singleton作用域时，Spring IOC容器只会创建该bean定义的唯一实例。这个单一实例会被存储到单例缓存（singleton cache）中，并且所有针对该bean的后续请求和引用都将返回被缓存的对象实例，这里要注意的是singleton作用域和GOF设计模式中的单例是完全不同的，单例设计模式表示一个ClassLoader中只有一个class存在，而这里的singleton则表示一个容器对应一个bean，也就是说当一个bean被标识为singleton时候，spring的IOC容器中只会存在一个该bean。
+
+在默认情况下,spring的ApplicationContext容器在启动时,自动实例化所有singleton的Bean并缓存于容器中。
+虽然启动时会花费一些时间,但带来两个好处:
+(1)首先对Bean提前的实例化操作会及早发现一些潜在的配置问题。
+(2)其次Bean以缓存的方式保存,当运行时使用到该Bean时就无须再实例化了,加快了运行效率。
+如果用户不希望在容器启动时提前实例化singleton的Bean,可以通过lazy-init属性进行控制。但是lazy-init="true"的Bean在某些情况下依旧会提前实例化:如果该Bean被其它需要提前实例化的Bean引用到,spring也将忽略延迟实例化的设置。
+
+2.prototype
+
+即原型，指每次向Spring容器请求获取Bean都返回一个全新的Bean，相对于"singleton"来说就是不缓存Bean，每次都是一个根据Bean定义创建的全新Bean。
+
+当使用prorotype作为作用域时，Bean会导致每次对该Bean的请求都创建一个Bean实例，所以对有状态的Bean应该使用prorotype作用域，无状态Bean 则使用singleton作用域。还有就是Spring不能对一个prototype作用域 bean的整个生命周期负责，容器在初始化、配置、装饰或者是装配完一个prototype实例后，将它交给客户端，随后就对该prototype实例不闻不问了。
+
+在默认情况下,spring容器在启动时不实例化prototype的Bean。此外,spring容器将prototype的Bean交给调用者后,就不再管理它的生命周期。
+
+下面测试一下singleton与prototype，Java类用之前建的HelloWorld.java。
+
+复制代码
+package com.spring.test;
+
+public class HelloWorld {
+    private String info;
+
+    public String getInfo() {
+        return info;
+    }
+
+    public void setInfo(String info) {
+        this.info = info;
+    }
+    
+    public HelloWorld(){
+        System.out.println("执行构造函数！");
+    }
+}
+复制代码
+配置文件applicationContext.xml：
+
+<bean id="hello" class="com.spring.test.HelloWorld">  
+    <property name="info" value="Hello,This is my first Spring Application!"></property>  
+</bean> 
+其中id为"hello"的bean声明为singleton（因为默认是singleton，所以可以不显示指定）
+测试方法如下：
+
+复制代码
+/**
+ * 测试Bean的作用域
+ */
+@Test
+public void test(){
+    //读取配置文件
+    ApplicationContext ctx=new ClassPathXmlApplicationContext("applicationContext.xml");
+    //获取bean的实例
+    HelloWorld t=(HelloWorld) ctx.getBean("hello");
+    HelloWorld t1=(HelloWorld) ctx.getBean("hello");
+    System.out.println(t==t1);
+}
+复制代码
+执行结果为：
+
+
+
+可以看到只打印了一次“执行构造函数！”，并且t=t1，说明它们是同一对象。
+
+修改配置文件，将id为"hello"的bean的scope属性改为"prototype"。
+
+<bean id="hello" class="com.spring.test.HelloWorld" scope="prototype">  
+    <property name="info" value="Hello,This is my first Spring Application!"></property>  
+</bean> 
+再次执行上面的测试方法，结果如下：
+
+
+
+打印了两次“执行构造函数！”，并且t!=t1。
+
+3.web应用中的作用域
+
+在Web应用中，我们可能需要将数据存储到request、session、global session。因此Spring提供了三种Web作用域：request、session、globalSession。
+
+（1）request作用域：request表示针对每一次HTTP请求都会产生一个新的bean，同时该bean仅在当前HTTP request内有效。示例：
+
+<bean id="loginAction" class="com.foo.LoginAction" scope="request"/>
+ 针对每次HTTP请求，Spring容器会根据loginAction bean定义创建一个全新的LoginAction bean实例， 且该loginAction bean实例仅在当前HTTP request内有效，因此可以根据需要放心的更改所建实例的内部状态， 而其他请求中根据loginAction bean定义创建的实例，将不会看到这些特定于某个请求的状态变化。 当处理请求结束，request作用域的bean实例将被销毁。
+
+（2）session作用域：针对每个会话，spring容器都会创建一个全新的Bean，且该Bean仅在当前HTTP Session内有效。
+
+<bean id="userPreferences" class="com.foo.UserPreferences" scope="session"/>
+针对某个HTTP Session，Spring容器会根据userPreferences bean定义创建一个全新的userPreferences bean实例， 且该userPreferences bean仅在当前HTTP Session内有效。 与request作用域一样，你可以根据需要放心的更改所创建实例的内部状态，而别的HTTP Session中根据userPreferences创建的实例，将不会看到这些特定于某个HTTP Session的状态变化。 当HTTP Session最终被废弃的时候，在该HTTP Session作用域内的bean也会被废弃掉。
+
+（3）globalSession作用域：类似于session作用域，只是其用于portlet环境的web应用。如果在非portlet环境将视为session作用域。
+
+<bean id="userPreferences" class="com.foo.UserPreferences" scope="globalSession"/>
+global session作用域类似于标准的HTTP Session作用域，不过它仅仅在基于portlet的web应用中才有意义。Portlet规范定义了全局Session的概念，它被所有构成某个portlet web应用的各种不同的portlet所共享。在global session作用域中定义的bean被限定于全局portlet Session的生命周期范围内。
+
+请注意，假如你在编写一个标准的基于Servlet的web应用，并且定义了一个或多个具有global session作用域的bean，系统会使用标准的HTTP Session作用域，并且不会引起任何错误。
+
+
+
+
+
+
+
+Spring系列之依赖注入的方式
+一、依赖注入方式
+
+      对于spring配置一个bean时，如果需要给该bean提供一些初始化参数，则需要通过依赖注入方式，所谓的依赖注入就是通过spring将bean所需要的一些参数传递到bean实例对象的过程，spring的依赖注入有3种方式：
+
+·使用属性的setter方法注入 ，这是最常用的方式；
+·使用构造器注入；
+·使用Filed注入（用于注解方式）。
+
+1.使用属性注入
+
+     属性注入即通过setXxx()方法注入Bean的属性值或依赖对象，由于属性注入方式具有可选择性和灵活性高的优点，因此属性注入是实际应用中最常采用的注入方式。
+
+<bean id=”……” class=”……”>  
+    <property name=”属性1” value=”……”/>  
+    <property name=”属性2” value=”……”/>  
+    ……  
+</bean>  
+      属性注入要求Bean提供一个默认的构造函数，并为需要注入的属性提供对应的Setter方法。Spring先调用Bean的默认构造函数实例化Bean对象，然后通过反射的方式调用Setter方法注入属性值。来看一个简单的例子。
+
+复制代码
+package com.spring.model;
+
+public class Car {
+    
+    private int maxSpeed;
+    private String brand;
+    private double price;
+    
+    public int getMaxSpeed() {
+        return maxSpeed;
+    }
+    //一定要写被注入对象的set方法
+    public void setMaxSpeed(int maxSpeed) {
+        this.maxSpeed = maxSpeed;
+    }
+    public String getBrand() {
+        return brand;
+    }
+    public void setBrand(String brand) {
+        this.brand = brand;
+    }
+    public double getPrice() {
+        return price;
+    }
+    public void setPrice(double price) {
+        this.price = price;
+    }
+    
+    public void run(){
+        System.out.println("brand:"+brand+",maxSpeed:"+maxSpeed+",price:"+price);
+    }
+}
+复制代码
+     Car类中定义了3个属性，并分别提供了对应的Setter方法。（注：默认构造函数是不带参的构造函数。Java语言规定如果类中没有定义任何构造函数，则JVM自动为其生成一个默认的构造函数。反之，如果类中显示定义了构造函数，则JVM不会为其生成默认的构造函数。所以假设Car类中显示定义了一个带参的构造函数，如public Car(String brand)，则需要同时提供一个默认构造函数public Car()，否则使用属性注入时将抛出异常。）
+下面在Spring配置文件中对Car进行属性注入：
+
+<!-- 属性注入 -->
+<bean id="car" class="com.spring.model.Car">  
+    <property name="maxSpeed" value="200"></property>
+    <property name="brand" value="红旗CA72"></property>  
+    <property name="price" value="200000.00"></property>
+</bean>
+     在上述代码中配置了一个Bean，并为该Bean的3个属性提供了属性值。具体来说，Bean的每一个属性对应一个<property>标签，name为属性的名称，在Bean实现类中拥有与其对应的Setter方法：maxSpeed对应setMaxSpeed()，brand对应setBrand()。
+     需要指出的是：Spring只会检查Bean中是否有对应的Setter方法，至于Bean中是否有对应的属性变量则不做要求。例如配置文件中<property name="brand"/>的属性配置项仅要求Car类中拥有setBrand()方法，但Car类不一定要拥有brand成员变量。
+
+测试方法：
+
+复制代码
+/**
+ * 属性注入
+ */
+@Test
+public void test(){
+    //读取配置文件
+    ApplicationContext ctx=new ClassPathXmlApplicationContext("applicationContext.xml");
+    //获取bean的实例
+    Car car=(Car) ctx.getBean("car");
+    car.run();
+}
+复制代码
+ 2.构造函数注入
+
+构造函数注入是除属性注入之外的另一种常用的注入方式，它保证一些必要的属性在Bean实例化时就得到设置，并且确保了Bean实例在实例化后就可以使用。
+使用方式：
+第一，在类中，不用为属性设置setter方法，但是需要生成该类带参的构造方法。
+第二，在配置文件中配置该类的bean，并配置构造器，在配置构造器中用到了<constructor-arg>节点，该节点有四个属性：
+· index是索引，指定注入的属性，从0开始；
+· type是指该属性所对应的类型；
+· ref 是指引用的依赖对象；
+· value 当注入的不是依赖对象，而是基本数据类型时，就用value；
+
+（1）按类型匹配入参
+
+      如果任何可用的Car对象都必须提供maxSpeed、brand和price的值，使用属性注入方式只能人为在配置时提供保证，而无法在语法级提供保证，这时通过构造函数注入就可以很好地满足这一要求。使用构造函数注入的前提是Bean必须提供带参的构造函数，下面为Car提供一个可设置maxSpeed、brand和price属性的构造函数。
+
+复制代码
+package com.spring.model;
+
+public class Car {
+    
+    private int maxSpeed;
+    private String brand;
+    private double price;
+    
+    //带参构造方法
+    public Car(int maxSpeed,String brand, double price){
+        this.maxSpeed=maxSpeed;
+        this.brand=brand;
+        this.price=price;
+    }
+    
+    public void run(){
+        System.out.println("brand:"+brand+",maxSpeed:"+maxSpeed+",price:"+price);
+    }
+}
+复制代码
+构造函数注入的配置方式和属性注入方式的配置有所不同，在spring配置文件中使用构造函数注入装配这个Car Bean。
+
+<!-- 构造函数注入(按类型匹配) -->
+<bean id="car1" class="com.spring.model.Car">  
+    <constructor-arg type="int" value="300"></constructor-arg>
+    <constructor-arg type="java.lang.String" value="宝马"></constructor-arg>
+    <constructor-arg type="double" value="300000.00"></constructor-arg>
+</bean>
+在<constructor-arg>的元素中有一个type属性，它表示构造函数中参数的类型，为spring提供了判断配置项和构造函数入参对应关系的“信息”。
+
+（2）按索引匹配入参
+
+      我们知道，Java语言通过入参的类型及顺序区分不同的重载方法，对于上面代码中的Car类，Spring仅通过type属性指定的参数类型就可以知道“宝马”对应String类型的brand入参，而“300000.00”对应double类型的price入参。但是，如果Car构造函数3个入参的类型相同，仅通过type就无法确定对应关系了，这时需要通过入参索引的方式进行确定。
+为了更好地演示按索引匹配入参的配置方式，特意对Car构造函数进行一下调整。
+
+public Car(String brand, String corp,double price){
+    this.brand=brand;
+    this.corp=corp;
+    this.price=price;
+}
+brand和corp的入参类型都是String，所以String将无法确定type为String的<constructor-arg>到底对应的是brand还是corp。但是，通过显示指定参数的索引能够消除这种不确定性，如下所示。
+
+复制代码
+<!-- 构造函数注入(按索引匹配) -->
+<bean id="car2" class="com.spring.model.Car"> 
+    <!-- 注意索引从0开始 --> 
+    <constructor-arg index="0" value="宝马"></constructor-arg>
+    <constructor-arg index="1" value="中国一汽"></constructor-arg>
+    <constructor-arg index="2" value="300000.00"></constructor-arg>
+</bean>
+复制代码
+构造函数第一个参数索引为0，第二个为1，以此类推，因此很容易知道“宝马”对应brand入参，而“中国一汽”对应corp入参。
+
+（3）联合使用类型和索引匹配入参
+     有时需要联合使用type和index才能确定匹配项和构造函数入参的对应关系，看下面的代码。
+
+复制代码
+public Car(String brand, String corp,double price){
+    this.brand=brand;
+    this.corp=corp;
+    this.price=price;
+}
+
+public Car(String brand, String corp,int maxSpeed){
+    this.brand=brand;
+    this.corp=corp;
+    this.maxSpeed=maxSpeed;
+}
+复制代码
+     这里，Car拥有两个重载的构造函数，它们都有三个入参。针对这种情况，按照入参索引的配置方式又难以满足要求了，这时需要联合使用<constructor-arg>的type和index才能解决问题，看下面代码。
+
+复制代码
+<!-- 构造函数注入(通过入参类型和位置索引确定对应关系) -->
+<!-- 对应public Car(String brand, String corp,int maxSpeed)构造函数 -->
+<bean id="car3" class="com.spring.model.Car">  
+    <constructor-arg index="0" type="java.lang.String" value="奔驰"></constructor-arg>
+    <constructor-arg index="1" type="java.lang.String" value="中国一汽"></constructor-arg>
+    <constructor-arg index="2" type="int" value="200"></constructor-arg>
+</bean>
+复制代码
+      对于上面的两个构造函数，如果仅通过index进行配置，Spring将无法确定第3个入参配置项究竟是对应int的maxSpeed还是double的price，采用索引匹配时，真正引起歧义的地方在于第3个入参，因此仅需要明确指定第3个入参的类型就可以取消歧义了。所以在上面的代码中，第1个和第2个<constructor-arg>元素的type属性可以去除。
+      对于由于参数数目相同而类型不同所引起的潜在配置歧义问题，Spring容器可以正确启动且不会给出报错信息，它将随机采用一个匹配的构造函数实例化Bean，而被选择的构造函数可能并不是用户所希望的。因此，必须特别谨慎，以避免潜在的错误。
+
+ 3.使用字段（Filed）注入（用于注解方式）
+
+除了上面讲到的使用属性的setter方法或使用构造器方法来注入依赖对象，还有一种注入依赖对象的方法，就是使用注解。
+
+来看一个例子，首先不使用注解的方式。
+
+新建一个业务接口：
+
+package com.spring.service;
+
+public interface ICommonService {
+    
+    public void add();
+}
+实现类：
+
+复制代码
+package com.spring.service.impl;
+
+import com.spring.dao.ICommonDao;
+import com.spring.service.ICommonService;
+
+public class CommonServiceImpl implements ICommonService{
+    
+    private ICommonDao commonDao;
+    
+    // 依赖注入DAO组件所需的setter方法
+    public void setCommonDao(ICommonDao commonDao) {
+        this.commonDao = commonDao;
+    }
+    
+    public void add(){
+        commonDao.add();
+    }
+}
+复制代码
+dao层接口：
+
+package com.spring.dao;
+
+public interface ICommonDao {
+    public void add();
+}
+实现类：
+
+复制代码
+package com.spring.dao.impl;
+
+import com.spring.dao.ICommonDao;
+
+public class CommonDaoImpl implements ICommonDao{
+    
+    public void add(){
+        System.out.println("enter add!");
+    }
+}
+复制代码
+配置文件：
+
+<bean id="commonDao" class="com.spring.dao.impl.CommonDaoImpl"></bean>
+<bean id="commonService" class="com.spring.service.impl.CommonServiceImpl">
+    <!-- 注入持久化访问所需的DAO组件 -->
+    <property name="commonDao" ref="commonDao"/>
+</bean>
+以上是不使用注解的方式注入依赖对象（使用属性注入），下面来看一下使用注解为某个bean注入依赖对象。
+
+（1）首先，在Spring容器的配置文件applicationContext.Xml文件中配置以下信息,该信心是一个Spring配置文件的模板.
+
+复制代码
+<?xml version="1.0" encoding="UTF-8"?>
+<beans
+    xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:p="http://www.springframework.org/schema/p"
+    xmlns:context="http://www.springframework.org/schema/context"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans 
+    http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+    http://www.springframework.org/schema/context
+    http://www.springframework.org/schema/context/spring-context-3.0.xsd
+    ">
+    
+</beans>
+复制代码
+注意：只有配置了紫色部分的行才可以引入注解的命名空间，否则报错。以上的配置隐式的注册了多个对注释进行解析的处理器：AutowiredAnnotationBeanPostProcessor、CommonAnnotationBeanPostProcessor、PersistenceAnnotationBeanPostProcessor等。
+
+（2）其次，在配置文件中打开<context:annotation-config>节点，告诉Spring容器可以用注解的方式注入依赖对象；其在配置文件中的代码如下：
+
+复制代码
+<beans>
+
+……
+
+<context:annotation-config></context:annotation-config>
+
+……
+
+</beans>
+复制代码
+（3）第三，在配置文件中配置bean对象，如下：
+
+<bean id="commonDao" class="com.spring.dao.impl.CommonDaoImpl"></bean>
+<bean id="commonService" class="com.spring.service.impl.CommonServiceImpl"></bean>
+（4）第四，在需要依赖注入的类中（本例中是CommonServiceImpl），声明一个依赖对象，不用生成该依赖对象的setter方法，并且为该对象添加注解。
+
+ 修改业务层实现类CommonServiceImpl
+
+复制代码
+package com.spring.service.impl;
+
+import javax.annotation.Resource;
+import com.spring.dao.ICommonDao;
+import com.spring.service.ICommonService;
+
+public class CommonServiceImpl implements ICommonService{
+    
+    @Resource(name="commonDao")
+    private ICommonDao commonDao;
+    
+//    // 依赖注入DAO组件所需的setter方法
+//    public void setCommonDao(ICommonDao commonDao) {
+//        this.commonDao = commonDao;
+//    }
+    
+    public void add(){
+        commonDao.add();
+    }
+}
+复制代码
+      其中，在Java代码中可以使用@Autowired或@Resource注解方式进行Spring的依赖注入。两者的区别是：@Autowired默认按类型装配，@Resource默认按名称装配，当找不到与名称匹配的bean时，才会按类型装配。
+
+      比如：我们用@Autowired为上面的代码ICommonDao接口的实例对象进行注解，它会到Spring容器中去寻找与ICommonDao对象相匹配的类型，如果找到该类型则将该类型注入到commonDao字段中；
+
+     如果用@Resource进行依赖注入，它先会根据指定的name属性去Spring容器中寻找与该名称匹配的类型，例如：@Resource(name="commonDao")，如果没有找到该名称，则会按照类型去寻找，找到之后，会对字段commonDao进行注入。
+
+     使用注解注入依赖对象不用再在代码中写依赖对象的setter方法或者该类的构造方法，并且不用再配置文件中配置大量的依赖对象，使代码更加简洁，清晰，易于维护。
+
+     在Spring IOC编程的实际开发中推荐使用注解的方式进行依赖注入。
+
+二、依赖注入——自动装配
+
+     在应用中，我们常常使用<ref>标签为JavaBean注入它依赖的对象,同时也Spring为我们提供了一个自动装配的机制，在定义Bean时，<bean>标签有一个autowire属性，我们可以通过指定它来让容器为受管JavaBean自动注入依赖对象。
+
+自动装配是在配置文件中实现的，如下：<bean id="***" class="***" autowire="byType">
+
+只需要配置一个autowire属性即可完成自动装配，不用再配置文件中写<property>,但是在类中还是要生成依赖对象的setter方法。
+
+<bean>的autowire属性有如下六个取值，他们的说明如下
+
+1.No：即不启用自动装配。Autowire默认的值。默认情况下，需要通过"ref"来装配bean，如下：
+
+复制代码
+package com.lei.common;
+ 
+public class Customer 
+{
+    private Person person;
+ 
+    public Customer(Person person) {
+        this.person = person;
+    }
+ 
+    public void setPerson(Person person) {
+        this.person = person;
+    }
+    //...
+}
+复制代码
+package com.lei.common;
+ 
+public class Person 
+{
+    //...
+}
+配置文件：
+
+<bean id="customer" class="com.lei.common.Customer">
+    <property name="person" ref="person" />
+</bean>
+<bean id="person" class="com.lei.common.Person" />
+2.byName：按名称装配  可以根据属性的名称在容器中查询与该属性名称相同的bean，如果没有找到，则属性值为null。假设Boss类中有一个名为car的属性，如果容器中刚好有一个名为car的Bean，Spring就会自动将其装配给Boss的car属性。
+
+     根据属性Property的名字装配bean，这种情况，Customer设置了autowire="byName"，Spring会自动寻找与属性名字“person”相同的bean，找到后，通过调用setPerson(Person person)将其注入属性。
+
+<bean id="customer" class="com.lei.common.Customer" autowire="byName" />
+<bean id="person" class="com.lei.common.Person" />
+如果根据 Property name找不到对应的bean配置，如下：
+
+<bean id="customer" class="com.lei.common.Customer" autowire="byName" />
+<bean id="person_another" class="com.lei.common.Person" />
+Customer中Property名字是person，但是配置文件中找不到person，只有person_another，这时就会装配失败，运行后，Customer中person=null。
+
+3.byType：按类型装配  可以根据属性类型，在容器中寻找该类型匹配的bean，如有多个，则会抛出异常，如果没有找到，则属性值为null。假设Boss类中有一个Car类型的属性，如果容器中刚好有一个Car类型的Bean，Spring就会自动将其装配给Boss的这个属性。
+
+     根据属性Property的数据类型自动装配，这种情况，Customer设置了autowire="byType"，Spring会总动寻找与属性类型相同的bean，找到后，通过调用setPerson(Person person)将其注入。
+
+<bean id="customer" class="com.lei.common.Customer" autowire="byType" />
+<bean id="person" class="com.lei.common.Person" />
+ 如果配置文件中有两个类型相同的bean会怎样呢？如下：
+
+<bean id="customer" class="com.lei.common.Customer" autowire="byType" />
+<bean id="person" class="com.lei.common.Person" />
+<bean id="person_another" class="com.lei.common.Person" />
+一旦配置如上，有两种相同数据类型的bean被配置，将抛出UnsatisfiedDependencyException异常，见以下：
+Exception in thread "main" org.springframework.beans.factory.UnsatisfiedDependencyException: 
+所以，一旦选择了“byType”类型的自动装配，请确认你的配置文件中每个数据类型定义一个唯一的bean。
+
+4.constructor：与byType方式相似，不同之处在与它应用于构造器参数，如果在容器中没有找到与构造器参数类型一致的bean，那么将抛出异常。（根据构造函数参数的数据类型，进行byType模式的自动装配。）
+
+这种情况下，Spring会寻找与参数数据类型相同的bean，通过构造函数public Customer(Person person)将其注入。
+
+<bean id="customer" class="com.lei.common.Customer" autowire="constructor" />
+<bean id="person" class="com.lei.common.Person" />
+5.autodetect：通过bean类的自省机制(introspection)来决定是使用constructor还是byType的方式进行自动装配。如果Bean有空构造器那么将采用“byType”自动装配方式，否则使用“constructor”自动装配方式。
+
+这种情况下，Spring会先寻找Customer中是否有默认的构造函数，如果有相当于上边的"constructor"这种情况，用构造函数注入，否则，用"byType"这种方式注入，所以，此例中通过调用public Customer(Person person)将其注入。
+
+<bean id="customer" class="com.lei.common.Customer" autowire="autodetect" />
+<bean id="person" class="com.lei.common.Person" />
+6.default：由上级标签<beans>的default-autowire属性确定。
+
+注意：在配置bean时，<bean>标签中Autowire属性的优先级比其上级标签高，即是说，如果在上级标签中定义default-autowire属性为byName，而在<bean>中定义为byType时，Spring IoC容器会优先使用<bean>标签的配置。
+
+小结：使用自动装配，配置文件简洁了许多。但是，自动装配并不是十全十美的，我们不论是使用byName还是byType的方法，Spring不一定就能很准确的为我们找到JavaBean依赖的对象。在这种情况下，你务必遵守javabean的命名规范，另外，如果使用自动装配，Spring配置文件的可读性也大大降低，我们不能很容易的看出个bean之间的依赖关系，这也在一定程度上降低了程序可维护性；也容易造成潜在的错误，比如说通过byName来装配，如果将属性 名字改了后，Spring就不会将其自动装配给Bean的属性了。
+
+因此在使用自动装配时，应当权衡利弊，合理的与ref的方法相结合，尽量在降低工作量的同时，保证应用的可维护度。但是spring的reference还是不推荐在定义中用这个功能。
+
+不是所有类型都能自动装配，不能自动装配的数据类型：Object、基本数据类型（Date、CharSequence、Number、URI、URL、Class、int）等。
+
+三、注入参数详解
+
+·注入常量
+
+注入常量是依赖注入中最简单的。配置方式如下所示：
+
+<property name="message" value="Hello World!"/>
+或
+<property name="index"><value>1</value></property>
+以上两种方式都可以，从配置来看第一种更简洁。注意此处“value”中指定的全是字符串，由Spring容器将此字符串转换成属性所需要的类型，如果转换出错，将抛出相应的异常。
+
+·注入集合类型
+
+Java.util包中的集合类是最常用的数据结构类型，主要包括List、Set、Map、Properties，Spring为这些集合类型属性提供了专门的配置元素标签。
+
+1.List：需要使用<list>标签来配置注入。
+
+新建一个Boss类，并在类中添加一个List类型的favorites属性。
+
+复制代码
+package com.spring.model;
+
+import java.util.List;
+
+public class Boss {
+    
+    private List favorites;
+
+    public List getFavorites() {
+        return favorites;
+    }
+
+    public void setFavorites(List favorites) {
+        this.favorites = favorites;
+    }
+    
+    public void print(){
+        System.out.println(favorites);
+    }
+}
+复制代码
+对应Spring中的配置片段如下所示：
+
+复制代码
+<!-- 注入List类型属性 -->
+<bean id="boss" class="com.spring.model.Boss">  
+    <property name="favorites">
+        <list>
+            <value>看报</value>
+            <value>赛车</value>
+            <value>高尔夫</value>
+        </list>
+    </property>
+</bean>
+复制代码
+List属性既可以通过<value>注入字符串，也可以通过<ref>注入容器中的其他Bean。
+
+2.Set：需要使用<set>标签来配置注入，其配置参数及含义和<lsit>标签完全一样，具体配置例子如下：
+
+复制代码
+<bean id=”……” class=”……”>
+    <property name="……">
+        <set>  
+            <value>value1</value>  
+            <value>value2</value>  
+            ……  
+        </set>
+    </property>
+</bean> 
+复制代码
+3.Map：需要使用<map>标签来配置注入，其属性“key-type”和“value-type”分别指定“键”和“值”的数据类型。
+
+在Boss类中添加一个Map类型的jobs属性。
+
+复制代码
+package com.spring.model;
+
+import java.util.List;
+import java.util.Map;
+
+public class Boss {
+
+    private Map jobs;
+    
+    public Map getJobs() {
+        return jobs;
+    }
+
+    public void setJobs(Map jobs) {
+        this.jobs = jobs;
+    }
+
+    public void print1(){
+        System.out.println(jobs);
+    }
+}
+复制代码
+在配置文件中可以通过以下方式为jobs属性提供配置值。
+
+复制代码
+<!-- 注入Map类型属性 -->
+<bean id="boss1" class="com.spring.model.Boss">  
+    <property name="jobs">
+        <map>
+            <entry key="AM" value="会见客户" />
+            <entry key="PM" value="公司内部会议" />
+        </map>
+    </property>
+</bean> 
+复制代码
+其中<map>表示Map注入，<entry>表示键值对，<key>表示键数据，<value>表示键所对应的值数据。
+
+4.Properties：需要使用<props>标签来配置注入，键和值类型必须是String，不能变，子标签<prop key=”键”>值</prop>来指定键值对。
+
+Properties类型其实可以看成是Map类型的特例。Map元素的键和值可以是任何类型的对象，而Properties属性的键和值都只能是字符串。为Boss添加一个Properties类型的mails属性。
+
+复制代码
+package com.spring.model;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+
+public class Boss {
+    
+    private Properties mails;
+    
+    public Properties getMails() {
+        return mails;
+    }
+
+    public void setMails(Properties mails) {
+        this.mails = mails;
+    }
+    
+    public void print2(){
+        System.out.println(mails);
+    }
+}
+复制代码
+下面的配置片段为mails提供了配置。
+
+复制代码
+<!-- 注入Properties类型属性 -->
+<bean id="boss2" class="com.spring.model.Boss">  
+    <property name="mails">
+        <props>
+            <prop key="jobMail">john-office@163.com</prop>
+            <prop key="lifeMail">john-life@163.com</prop>
+        </props>
+    </property>
+</bean>
+复制代码
+因为Properties键值对只能是字符串，因此其配置比Map的配置要简单一些，注意值得配置没有<value>子元素标签。
+
+·引用其他Bean
+
+Spring IOC容器中定义的Bean可以相互引用，IOC容器则充当“红娘”的角色。下面在Boss类中添加一个Car类型的属性。
+
+复制代码
+package com.spring.model;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+
+public class Boss {
+    
+    private Car car;
+    //设置car属性
+    public void setCar(Car car) {
+        this.car = car;
+    }
+
+    public void print3(){
+        System.out.println(car.getBrand()+"----"+car.getPrice()+"----"+car.getMaxSpeed());
+    }
+}
+复制代码
+boss的Bean通过<ref>元素引用car Bean，建立起boss对car的依赖。
+
+复制代码
+<bean id="car" class="com.spring.model.Car">  
+    <property name="maxSpeed" value="200"></property>
+    <property name="brand" value="红旗CA72"></property>  
+    <property name="price" value="200000.00"></property>
+</bean>
+<!-- 通过ref元素引用bean -->
+<bean id="boss3" class="com.spring.model.Boss">  
+    <property name="car">
+        <!--引用上面定义的car Bean-->
+        <ref bean="car"></ref>
+    </property>
+</bean>
+复制代码
+<ref>元素可以通过以下3个属性引用容器中的其他Bean。
+·  bean：通过该属性可以引用同一容器或父容器的Bean，这是最常见的形式。
+
+·  local：通过该属性只能引用同一配置文件中定义的Bean，它可以利用XML解析器自动检验引用的合法性，以便在开发编写配置时能够及时发现并纠正配置的错误。
+
+·  parent:引用父容器中的Bean，如<ref parent="car">的配置说明car的Bean是父容器中的Bean。
+
+为了说明子容器对父容器中Bean的引用，来看一个具体的例子。假设有两个配置文件beans1.xml和beans2.xml，其中beans1.xml被父容器加载，其配置内容如下。
+
+复制代码
+<?xml version="1.0" encoding="UTF-8"?>
+<beans
+    xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:p="http://www.springframework.org/schema/p"
+    xmlns:context="http://www.springframework.org/schema/context"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+    http://www.springframework.org/schema/context
+    http://www.springframework.org/schema/context/spring-context-3.0.xsd
+    ">
+    
+    <!--在父容器中定义的car -->
+    <bean id="car" class="com.spring.model.Car">
+        <property name="brand" value="红旗CA72"></property> 
+        <property name="maxSpeed" value="200"></property> 
+        <property name="price" value="200000.00"></property>
+    </bean>
+    
+</beans>
+复制代码
+而beans2.xml被子容器加载，其配置内容如下。
+
+复制代码
+<?xml version="1.0" encoding="UTF-8"?>
+<beans
+    xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:p="http://www.springframework.org/schema/p"
+    xmlns:context="http://www.springframework.org/schema/context"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+    http://www.springframework.org/schema/context
+    http://www.springframework.org/schema/context/spring-context-3.0.xsd
+    ">
+    
+    <!--1.该Bean和父容器中的car Bean具有相同的id -->
+    <bean id="car" class="com.spring.model.Car">  
+        <property name="brand" value="吉利CT5"></property>  
+        <property name="maxSpeed" value="100"></property>
+        <property name="price" value="100000.00"></property>
+    </bean>
+    <bean id="boss" class="com.spring.model.Boss">  
+        <property name="car">
+            <!--引用父容器中的car，而非1处定义的Bean，如果采用<ref bean="car" />将引用本容器1处的car  -->
+            <ref parent="car"></ref>
+        </property>
+    </bean>
+</beans>
+复制代码
+在beans1.xml中配置了一个car Bean，在beans2.xml中也配置了一个car Bean。分别通过父子容器加载beans1.xml和beans2.xml，beans2.xml中的boss通过<ref parent="car">将引用到父容器中的car。下面是分别加载beans1.xml和beans2.xml配置文件的代码。
+
+复制代码
+/**
+ * 引用父容器中的bean
+ */
+@Test
+public void test9(){
+    //父容器
+    ApplicationContext pFactory=new ClassPathXmlApplicationContext("beans1.xml");
+    //指定pFactory为该容器的父容器
+    ApplicationContext factory=new ClassPathXmlApplicationContext(new String[]{"beans2.xml"},pFactory);
+    Boss boss=(Boss) factory.getBean("boss");
+    System.out.println("引用父容器中的bean");
+    System.out.println(boss.getCar().toString());
+}
+复制代码
+运行这段代码，控制台中打印出以下的信息。
+
+引用父容器中的bean
+
+
+
+
+
+Think in java 
+Chapter 1
+1:System.getProperties().list(System.out); 中list()方法
+2：Html注释
+3：Random类
+
+
+
+
+
+1: 将登陆或注册信息保存在session或cookie中
+2：过滤器
+3：正则表达式
+4: import javax.servlet.Filter;
+5: 导航栏 右侧 用户信息，详细
+
+20160519
+6: 表单对齐
+7: 前段校验
+8: 批处理
+
+20150620
+9:  filter 过滤器，向下传递
+10：页面重命名后，清空工程生成的文件
+11：session过期设置
+12：mysql备份
+
+Java中的路径问题
+1：Servlet中，"/"代表Web应用的根目录
+
+Struts 2
+1：structs.xml 中包名的作用
+2：转发和重定向的区别
+
+<script>
+	function validate(f)	
+	{		
+		if(!(/^\W{5,15}$/.test(f.userid.value)))		
+		{		
+			alert("name 必须是5-15位");			
+			f.userid.focus();			
+			return false;		
+		}
+		if(!(/^\W{5,15}$/.test(f.userpass.value)))
+		{
+			alert("name 必须是5-15位");
+			f.userid.focus();
+			return false;
+		}
+	}
+</script>
+
